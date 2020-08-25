@@ -1,23 +1,67 @@
 import React, { Component } from 'react'
 import axios from "axios"
+import Card from './Card'
+import "./Deck.css"
 
-const API_URL = "http://deckofcardsapi.com/api/deck/new/shuffle/"
+const API_BASE_URL = "http://deckofcardsapi.com/api/deck"
 
 export default class Deck extends Component {
     constructor(props){
         super(props);
-        this.state = { deck: null }
+        this.state = { deck: null, drawn: [] }
+        this.getCard = this.getCard.bind(this)
     }
 
     async componentDidMount(){
-        let deck = await axios.get(API_URL)
+        let deck = await axios.get(`${API_BASE_URL}/new/shuffle/`)
         this.setState({ deck: deck.data })
     }
 
+    async getCard(){
+
+        let cardID = this.state.deck.deck_id
+
+        try {
+
+            let cardURL = `${API_BASE_URL}/${cardID}/draw`
+            let cardResponse = await axios.get(cardURL)
+
+            if(!cardResponse.data.success){
+                throw new Error ("No card remaining!")
+            }
+
+            console.log(cardResponse.data)
+
+            let card = cardResponse.data.cards[0]
+            this.setState(st => ({
+                drawn: [
+                    ...st.drawn,
+                    {id: card.code,
+                    image: card.image,
+                    name: `${card.value} of ${card.suit}`}
+                    ]
+                })
+            )
+
+        } catch (err) {
+            alert(err)
+        }
+    }
+
     render() {
+
+        const cards = this.state.drawn.map(c=>(
+            <Card key={c.id} name={c.name} image={c.image}/>
+        ))
+
         return (
-            <div>
-                <h1> Card Dealer</h1>
+            <div className="Deck">
+                <h1 className="Deck-title">Card Dealer</h1>
+                <h2 className="Deck-title subtitle">A demo made with React using an external API</h2>
+                <button className="Deck-btn" onClick={this.getCard}>Draw</button>
+                <div className="Deck-cardarea">
+                    {cards}
+                </div>
             </div>
         )
     }
